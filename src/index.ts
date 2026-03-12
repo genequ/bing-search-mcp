@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 
 /**
- * 必应中文搜索MCP服务器
- * 提供必应搜索工具给MCP客户端使用
+ * Bing Global Search MCP Server
+ * 提供必应搜索工具给MCP客户端使用，支持多地区搜索
  */
 
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
@@ -14,24 +14,29 @@ import { crawlWebPages } from './crawler.js';
 
 // 创建MCP服务器实例
 const server = new McpServer({
-  name: 'bing-cn-search',
-  version: '1.0.0',
+  name: 'bing-search',
+  version: '1.1.0',
 });
 
 /**
  * 注册必应搜索工具
  *
- * 该工具允许用户通过必应中文搜索引擎搜索信息
+ * 该工具允许用户通过必应搜索引擎搜索信息，支持多地区/语言
  */
 server.registerTool(
   'bing_search',
   {
-    description: '使用必应中文搜索引擎搜索信息。返回搜索结果包括标题、链接和摘要。',
+    description: '使用必应搜索引擎搜索信息。返回搜索结果包括标题、链接和摘要。支持多地区搜索。',
     inputSchema: {
       query: z
         .string()
         .min(1)
         .describe('搜索关键词或查询语句'),
+      market: z
+        .string()
+        .optional()
+        .default('en-US')
+        .describe('市场/语言代码 (如: zh-CN, en-US, en-GB, ja-JP, ko-KR, de-DE, fr-FR 等)，默认 en-US'),
       count: z
         .number()
         .min(1)
@@ -47,13 +52,13 @@ server.registerTool(
         .describe('结果偏移量，用于分页，默认0'),
     },
   },
-  async ({ query, count = 10, offset = 0 }) => {
+  async ({ query, market = 'en-US', count = 10, offset = 0 }) => {
     try {
       // 记录搜索请求
-      console.error(`执行必应搜索: "${query}", count=${count}, offset=${offset}`);
+      console.error(`执行必应搜索: "${query}", market=${market}, count=${count}, offset=${offset}`);
 
       // 获取搜索结果HTML
-      const html = await fetchBingSearch(query, count, offset);
+      const html = await fetchBingSearch(query, count, offset, market);
 
       // 解析HTML提取结果
       const searchResponse = parseBingSearchResults(html, query);
@@ -170,8 +175,26 @@ async function main() {
     await server.connect(transport);
 
     // 输出启动信息到stderr（不能用stdout，会破坏MCP通信）
-    console.error('必应中文搜索MCP服务器已启动');
+    console.error('Bing Search MCP Server started');
+    console.error('支持的市场: zh-CN, en-US, en-GB, ja-JP, ko-KR, de-DE, fr-FR, es-ES, it-IT, pt-BR, ru-RU');
     console.error('等待来自MCP客户端的请求...');
+
+    // 监听进程退出事件，清理浏览器实例
+    const cleanup = async () => {
+      console.error('正在关闭浏览器实例...');
+      try {
+        const { closeBrowser } = await import('./bingSearch.js');
+        await closeBrowser();
+      } catch (error) {
+        console.error('清理浏览器时出错:', error);
+      }
+    };
+
+    // 注册清理函数
+    process.on('SIGINT', cleanup);
+    process.on('SIGTERM', cleanup);
+    process.on('exit', cleanup);
+
   } catch (error) {
     console.error('启动MCP服务器失败:', error);
     process.exit(1);

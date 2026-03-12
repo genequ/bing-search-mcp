@@ -1,20 +1,29 @@
 {
-  "name": "bing-cn-mcp",
-  "version": "1.0.2",
+  "name": "bing-search-mcp",
+  "version": "1.1.0",
   "type": "module",
-  "description": "必应中文搜索MCP服务器",
+  "description": "Bing Search MCP Server - 支持多地区必应搜索",
   "main": "build/index.js",
   "bin": {
-    "bing-cn-mcp": "./build/index.js"
+    "bing-search-mcp": "./build/index.js"
   },
   "scripts": {
     "build": "tsc",
     "start": "node build/index.js",
     "dev": "tsc && node build/index.js"
   },
-  "files": ["build"],
-  "keywords": ["mcp", "bing", "search", "chinese", "搜索", "必应"],
-  "author": "yan5236",
+  "files": [
+    "build"
+  ],
+  "keywords": [
+    "mcp",
+    "bing",
+    "search",
+    "global",
+    "搜索",
+    "必应"
+  ],
+  "author": "Modified by user, original by yan5236",
   "license": "MIT",
   "repository": {
     "type": "git",
@@ -28,6 +37,7 @@
     "@modelcontextprotocol/sdk": "^1.25.1",
     "axios": "^1.13.2",
     "cheerio": "^1.1.2",
+    "puppeteer-core": "^23.11.1",
     "zod": "^3.25.76"
   },
   "devDependencies": {
